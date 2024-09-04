@@ -1,0 +1,41 @@
+# GitLab CI/CD configuration file
+
+stages:
+  - build
+  - test
+
+image: gradle:8.9-jdk22
+
+services:
+  - postgres
+
+variables:
+  POSTGRES_USER: root
+  POSTGRES_PASSWORD: root
+  SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/products
+  POSTGRES_HOST_AUTH_METHOD: trust
+
+before_script:
+  - apt-get update && apt-get install -y postgresql-client
+  - psql -h postgres -U root -c "CREATE DATABASE products;"
+
+# Build stage
+build:
+  stage: build
+  script:
+    - gradle clean build
+  artifacts:
+    paths:
+      - build/libs/*.jar
+
+# Test stage
+test:
+  stage: test
+  script:
+    - gradle test
+  dependencies:
+    - build
+  artifacts:
+    reports:
+      junit:
+        - build/test-results/test/TEST-*.xml
